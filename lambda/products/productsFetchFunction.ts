@@ -11,6 +11,7 @@ export async function handler(
   const method = event.httpMethod;
   const lambdaRequestId = context.awsRequestId;
   const apiRequestId = event.requestContext.requestId;
+
   console.log(
     `API Gateway Request ID: ${apiRequestId} - Lambda Request Id: ${lambdaRequestId}`
   );

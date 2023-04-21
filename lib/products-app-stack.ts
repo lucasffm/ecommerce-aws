@@ -7,6 +7,7 @@ export class ProductsAppStack extends Stack {
 
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
+
     this.productsFetchHandler = new NodejsFunction(
       this,
       "ProductsFetchFunction",
@@ -18,8 +19,8 @@ export class ProductsAppStack extends Stack {
         timeout: Duration.seconds(5),
         bundling: {
           minify: true,
-          sourceMap: false
-        }
+          sourceMap: false,
+        },
       }
     );
   }
