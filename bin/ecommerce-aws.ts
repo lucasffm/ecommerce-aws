@@ -3,6 +3,7 @@ import * as cdk from "aws-cdk-lib";
 import "source-map-support/register";
 import { EcommerceApiStack } from "../lib/ecommerce-api-stack";
 import { ProductsAppStack } from "../lib/products-app-stack";
+import { ProductsAppLayersStack } from "../lib/productsAppLayers-stack";
 
 const app = new cdk.App();
 const env: cdk.Environment = {
@@ -15,10 +16,21 @@ const tags = {
   team: "MeuTime",
 };
 
+const productsAppLayersStack = new ProductsAppLayersStack(
+  app,
+  "ProductsAppLayersStack",
+  {
+    tags,
+    env,
+  }
+);
+
 const productsAppStack = new ProductsAppStack(app, "ProductsApp", {
   tags,
   env,
 });
+
+productsAppStack.addDependency(productsAppLayersStack);
 
 const ecommerceApiStack = new EcommerceApiStack(app, "EcommerceApi", {
   productsFetchHandler: productsAppStack.productsFetchHandler,

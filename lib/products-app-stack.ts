@@ -1,6 +1,12 @@
-import { Duration, RemovalPolicy, Stack, StackProps } from "aws-cdk-lib";
+import {
+  Duration,
+  RemovalPolicy,
+  SecretValue,
+  Stack,
+  StackProps,
+} from "aws-cdk-lib";
 import { AttributeType, BillingMode, Table } from "aws-cdk-lib/aws-dynamodb";
-import { Runtime } from "aws-cdk-lib/aws-lambda";
+import { LayerVersion, Runtime } from "aws-cdk-lib/aws-lambda";
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 import { Construct } from "constructs";
 
@@ -24,6 +30,14 @@ export class ProductsAppStack extends Stack {
       writeCapacity: 1,
     });
 
+    // Products Layer
+    const productsLayerArn = SecretValue.ssmSecure("ProductsLayerVersionArn");
+    const productsLayer = LayerVersion.fromLayerVersionArn(
+      this,
+      "ProductsLayerVersionArn",
+      productsLayerArn.toString()
+    );
+
     this.productsFetchHandler = new NodejsFunction(
       this,
       "ProductsFetchFunction",
@@ -41,6 +55,7 @@ export class ProductsAppStack extends Stack {
         environment: {
           PRODUCTS_DDB: this.productsDdb.tableName,
         },
+        layers: [productsLayer],
       }
     );
 
@@ -63,6 +78,7 @@ export class ProductsAppStack extends Stack {
         environment: {
           PRODUCTS_DDB: this.productsDdb.tableName,
         },
+        layers: [productsLayer],
       }
     );
 
