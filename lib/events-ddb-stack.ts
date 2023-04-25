@@ -2,7 +2,7 @@ import { RemovalPolicy, Stack, StackProps } from "aws-cdk-lib";
 import { AttributeType, BillingMode, Table } from "aws-cdk-lib/aws-dynamodb";
 import { Construct } from "constructs";
 
-export class EventsDdb extends Stack {
+export class EventsDdbStack extends Stack {
   readonly table: Table;
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);

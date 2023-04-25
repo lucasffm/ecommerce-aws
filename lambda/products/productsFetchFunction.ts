@@ -4,10 +4,11 @@ import {
   Context,
 } from "aws-lambda";
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
+import { captureAWS } from "aws-xray-sdk-core";
 import { ProductRepository } from "/opt/nodejs/productsLayer";
 
 // Xray capture tracing
-// captureAWS(require("aws-sdk"));
+captureAWS(require("aws-sdk"));
 
 const productsDdb = process.env.PRODUCTS_DDB!;
 const ddbClient = new DocumentClient();

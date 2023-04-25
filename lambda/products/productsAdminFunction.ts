@@ -3,14 +3,23 @@ import {
   APIGatewayProxyResult,
   Context,
 } from "aws-lambda";
+import { Lambda } from "aws-sdk";
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
+import { captureAWS } from "aws-xray-sdk-core";
+import {
+  ProductEvent,
+  ProductEventType,
+} from "/opt/nodejs/productsEventsLayer";
 import { Product, ProductRepository } from "/opt/nodejs/productsLayer";
 
 // Xray capture tracing
-// captureAWS(require("aws-sdk"));
+captureAWS(require("aws-sdk"));
 
 const productsDdb = process.env.PRODUCTS_DDB!;
+const productsEventFunctionName = process.env.PRODUCTS_EVENT_FUNCTION_NAME!;
+
 const ddbClient = new DocumentClient();
+const lambdaClient = new Lambda();
 const productRepository = new ProductRepository(ddbClient, productsDdb);
 
 export async function handler(
@@ -25,6 +34,15 @@ export async function handler(
     console.log("POST /products");
     const product = JSON.parse(event.body!) as Product;
     const createdProduct = await productRepository.createProduct(product);
+
+    const response = await sendProductEvent(
+      createdProduct,
+      ProductEventType.CREATED,
+      "lucasffm@gmail.com",
+      lambdaRequestId
+    );
+
+    console.log(response);
 
     return {
       statusCode: 201,
@@ -43,6 +61,15 @@ export async function handler(
           product
         );
 
+        const response = await sendProductEvent(
+          productUpdated,
+          ProductEventType.UPDATED,
+          "lucasffm@gmail.com",
+          lambdaRequestId
+        );
+
+        console.log(response);
+
         return {
           statusCode: 200,
           body: JSON.stringify(productUpdated),
@@ -58,6 +85,15 @@ export async function handler(
       console.log(`DELETE /products/${productId}`);
       try {
         const product = await productRepository.deleteProduct(productId);
+
+        const response = await sendProductEvent(
+          product,
+          ProductEventType.DELETED,
+          "lucasffm@gmail.com",
+          lambdaRequestId
+        );
+
+        console.log(response);
 
         return {
           statusCode: 200,
@@ -79,4 +115,28 @@ export async function handler(
       message: "Page not found",
     }),
   };
+}
+
+function sendProductEvent(
+  product: Product,
+  eventType: ProductEventType,
+  email: string,
+  lambdaRequestId: string
+) {
+  const event: ProductEvent = {
+    email,
+    eventType,
+    productCode: product.code,
+    productId: product.id,
+    productPrice: product.price,
+    requestId: lambdaRequestId,
+  };
+
+  return lambdaClient
+    .invoke({
+      FunctionName: productsEventFunctionName,
+      Payload: JSON.stringify(event),
+      InvocationType: "RequestResponse",
+    })
+    .promise();
 }

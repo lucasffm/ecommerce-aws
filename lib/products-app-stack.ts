@@ -41,6 +41,18 @@ export class ProductsAppStack extends Stack {
       productsLayerArn
     );
 
+    // Events layer
+    const productsEventsLayerArn = StringParameter.valueForStringParameter(
+      this,
+      "ProductsEventsLayerVersionArn"
+    );
+
+    const productsEventsLayer = LayerVersion.fromLayerVersionArn(
+      this,
+      "ProductsEventsLayerVersionArn",
+      productsEventsLayerArn
+    );
+
     const productEventsHandler = new NodejsFunction(
       this,
       "ProductsEventsFunction",
@@ -49,7 +61,7 @@ export class ProductsAppStack extends Stack {
         entry: "lambda/products/productsEventsFunction.ts",
         handler: "handler",
         memorySize: 128,
-        runtime: Runtime.NODEJS_18_X,
+        runtime: Runtime.NODEJS_16_X,
         timeout: Duration.seconds(2),
         bundling: {
           minify: true,
@@ -58,7 +70,7 @@ export class ProductsAppStack extends Stack {
         environment: {
           EVENTS_DDB: props.eventsDdb.tableName,
         },
-        layers: [productsLayer],
+        layers: [productsEventsLayer],
         tracing: Tracing.ACTIVE,
       }
     );
@@ -73,7 +85,7 @@ export class ProductsAppStack extends Stack {
         entry: "lambda/products/productsFetchFunction.ts",
         handler: "handler",
         memorySize: 128,
-        runtime: Runtime.NODEJS_18_X,
+        runtime: Runtime.NODEJS_16_X,
         timeout: Duration.seconds(5),
         bundling: {
           minify: true,
@@ -82,7 +94,7 @@ export class ProductsAppStack extends Stack {
         environment: {
           PRODUCTS_DDB: this.productsDdb.tableName,
         },
-        layers: [productsLayer],
+        layers: [productsLayer, productsEventsLayer],
         tracing: Tracing.ACTIVE,
       }
     );
@@ -97,7 +109,7 @@ export class ProductsAppStack extends Stack {
         entry: "lambda/products/productsAdminFunction.ts",
         handler: "handler",
         memorySize: 128,
-        runtime: Runtime.NODEJS_18_X,
+        runtime: Runtime.NODEJS_16_X,
         timeout: Duration.seconds(5),
         bundling: {
           minify: true,
