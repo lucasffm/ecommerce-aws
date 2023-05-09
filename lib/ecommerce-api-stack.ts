@@ -165,13 +165,14 @@ export class EcommerceApiStack extends Stack {
         required: ["productName", "price", "code"],
       },
     });
-    productsResource.addMethod("POST", productsAdminIntegration),
-      {
-        requestValidator: ProductRequestValidator,
-        requestModels: {
-          "application/json": productRequestModel,
-        },
-      };
+
+    productsResource.addMethod("POST", productsAdminIntegration, {
+      requestValidator: ProductRequestValidator,
+      requestModels: {
+        "application/json": productRequestModel,
+      },
+    });
+
     // PUT /products/{id}
     productIdResource.addMethod("PUT", productsAdminIntegration, {
       requestValidator: ProductRequestValidator,
