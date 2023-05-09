@@ -42,6 +42,18 @@ export class OrdersAppStack extends Stack {
       ordersLayerArn
     );
 
+    // Orders Api Layer
+    const ordersApiLayerArn = StringParameter.valueForStringParameter(
+      this,
+      "OrdersApiLayerVersionArn"
+    );
+
+    const ordersApiLayer = LayerVersion.fromLayerVersionArn(
+      this,
+      "OrdersApiLayerVersionArn",
+      ordersApiLayerArn
+    );
+
     // Products Layer
     const productsLayerArn = StringParameter.valueForStringParameter(
       this,
@@ -56,7 +68,7 @@ export class OrdersAppStack extends Stack {
 
     this.ordersHandler = new NodejsFunction(this, "OrdersFunction", {
       functionName: "OrdersFunction",
-      entry: "lambda/orders/orderFunction.ts",
+      entry: "lambda/orders/ordersFunction.ts",
       handler: "handler",
       memorySize: 128,
       runtime: Runtime.NODEJS_16_X,
@@ -69,7 +81,7 @@ export class OrdersAppStack extends Stack {
         PRODUCTS_DDB: props.productsDdb.tableName,
         ORDERS_DDB: ordersDdb.tableName,
       },
-      layers: [ordersLayer, productsLayer],
+      layers: [ordersLayer, productsLayer, ordersApiLayer],
       tracing: Tracing.ACTIVE,
     });
 

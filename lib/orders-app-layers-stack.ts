@@ -8,6 +8,7 @@ export class OrdersAppLayersStack extends Stack {
     super(scope, id, props);
 
     const ordersLayer = new LayerVersion(this, "OrdersLayer", {
+      layerVersionName: "OrdersLayer",
       code: Code.fromAsset("lambda/orders/layers/ordersLayer"),
       compatibleRuntimes: [Runtime.NODEJS_16_X],
       removalPolicy: RemovalPolicy.RETAIN,
@@ -16,6 +17,18 @@ export class OrdersAppLayersStack extends Stack {
     new StringParameter(this, "OrdersLayerVersionArn", {
       parameterName: "OrdersLayerVersionArn",
       stringValue: ordersLayer.layerVersionArn,
+    });
+
+    const ordersApiLayer = new LayerVersion(this, "OrdersApiLayer", {
+      layerVersionName: "OrdersApiLayer",
+      code: Code.fromAsset("lambda/orders/layers/ordersApiLayer"),
+      compatibleRuntimes: [Runtime.NODEJS_16_X],
+      removalPolicy: RemovalPolicy.RETAIN,
+    });
+
+    new StringParameter(this, "OrdersApiLayerVersionArn", {
+      parameterName: "OrdersApiLayerVersionArn",
+      stringValue: ordersApiLayer.layerVersionArn,
     });
   }
 }

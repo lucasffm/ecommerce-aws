@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 import * as cdk from "aws-cdk-lib";
 
-import { OrdersAppLayersStack } from "lib/orders-app-layers-stack";
-import { OrdersAppStack } from "lib/orders-app-stack";
 import "source-map-support/register";
 import { EcommerceApiStack } from "../lib/ecommerce-api-stack";
 import { EventsDdbStack } from "../lib/events-ddb-stack";
+import { OrdersAppLayersStack } from "../lib/orders-app-layers-stack";
+import { OrdersAppStack } from "../lib/orders-app-stack";
 import { ProductsAppStack } from "../lib/products-app-stack";
 import { ProductsAppLayersStack } from "../lib/productsAppLayers-stack";
 
