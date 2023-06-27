@@ -1,5 +1,6 @@
 import { Duration, RemovalPolicy, Stack, StackProps } from "aws-cdk-lib";
 import { AttributeType, BillingMode, Table } from "aws-cdk-lib/aws-dynamodb";
+import { Effect, PolicyStatement } from "aws-cdk-lib/aws-iam";
 import { LayerVersion, Runtime, Tracing } from "aws-cdk-lib/aws-lambda";
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 import { StringParameter } from "aws-cdk-lib/aws-ssm";
@@ -75,7 +76,17 @@ export class ProductsAppStack extends Stack {
       }
     );
 
-    props.eventsDdb.grantWriteData(productEventsHandler);
+    const eventsDdbPolicy = new PolicyStatement({
+      effect: Effect.ALLOW,
+      actions: ["dynamodb:PutItem"],
+      resources: [props.eventsDdb.tableArn],
+      conditions: {
+        ["ForAllValues:StringLike"]: {
+          "dynamodb:LeadingKeys": ["#product_*"],
+        },
+      },
+    });
+    productEventsHandler.addToRolePolicy(eventsDdbPolicy);
 
     this.productsFetchHandler = new NodejsFunction(
       this,

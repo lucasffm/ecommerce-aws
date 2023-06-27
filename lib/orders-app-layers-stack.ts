@@ -30,5 +30,33 @@ export class OrdersAppLayersStack extends Stack {
       parameterName: "OrdersApiLayerVersionArn",
       stringValue: ordersApiLayer.layerVersionArn,
     });
+
+    const orderEventsLayer = new LayerVersion(this, "OrderEventsLayer", {
+      layerVersionName: "OrderEventsLayer",
+      code: Code.fromAsset("lambda/orders/layers/orderEventsLayer"),
+      compatibleRuntimes: [Runtime.NODEJS_16_X],
+      removalPolicy: RemovalPolicy.RETAIN,
+    });
+
+    new StringParameter(this, "OrderEventsLayerVersionArn", {
+      parameterName: "OrderEventsLayerVersionArn",
+      stringValue: orderEventsLayer.layerVersionArn,
+    });
+
+    const orderEventsRepositoryLayer = new LayerVersion(
+      this,
+      "OrderEventsRepositoryLayer",
+      {
+        layerVersionName: "OrderEventsRepositoryLayer",
+        code: Code.fromAsset("lambda/orders/layers/orderEventsRepositoryLayer"),
+        compatibleRuntimes: [Runtime.NODEJS_16_X],
+        removalPolicy: RemovalPolicy.RETAIN,
+      }
+    );
+
+    new StringParameter(this, "OrderEventsRepositoryLayerVersionArn", {
+      parameterName: "OrderEventsRepositoryLayerVersionArn",
+      stringValue: orderEventsRepositoryLayer.layerVersionArn,
+    });
   }
 }

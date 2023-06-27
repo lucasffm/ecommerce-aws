@@ -5,7 +5,14 @@ import {
   APIGatewayProxyResult,
   Context,
 } from "aws-lambda";
+import { SNS } from "aws-sdk";
 import { captureAWS } from "aws-xray-sdk-core";
+import { randomUUID } from "crypto";
+import {
+  Envelope,
+  OrderEvent,
+  OrderEventType,
+} from "/opt/nodejs/orderEventsLayer";
 import {
   CarrierType,
   OrderProductResponse,
@@ -22,8 +29,10 @@ captureAWS(require("aws-sdk"));
 
 const ordersDdb = process.env.ORDERS_DDB!;
 const productsDdb = process.env.PRODUCTS_DDB!;
+const orderEventsTopicArn = process.env.ORDER_EVENTS_TOPIC_ARN;
 
 const ddbClient = new DocumentClient();
+const snsClient = new SNS();
 
 const orderRepository = new OrderRepository(ddbClient, ordersDdb);
 const productRepository = new ProductRepository(ddbClient, productsDdb);
@@ -91,11 +100,22 @@ export async function handler(
     }
 
     const order = buildOrder(orderRequest, products);
-    const newOrder = await orderRepository.createOrder(order);
+    await orderRepository.createOrder(order);
+
+    // Send Order Event to SNS
+    const eventResult = await sendOrderEvent(
+      order,
+      OrderEventType.CREATED,
+      lambdaRequestId
+    );
+
+    console.log(
+      `Order created - OrderId: ${order.sk} - MessageId: ${eventResult.MessageId}`
+    );
 
     return {
       statusCode: 201,
-      body: JSON.stringify(convertToOrderResponse(newOrder)),
+      body: JSON.stringify(convertToOrderResponse(order)),
     };
   }
   if (method === "DELETE") {
@@ -103,6 +123,16 @@ export async function handler(
     const { email, orderId } = event.queryStringParameters!;
     try {
       const deletedOrder = await orderRepository.deleteOrder(email!, orderId!);
+
+      const eventResult = await sendOrderEvent(
+        deletedOrder,
+        OrderEventType.DELETED,
+        lambdaRequestId
+      );
+
+      console.log(
+        `Order deleted - OrderId: ${deletedOrder.sk} - MessageId: ${eventResult.MessageId}`
+      );
       return {
         statusCode: 200,
         body: JSON.stringify(convertToOrderResponse(deletedOrder)),
@@ -122,6 +152,32 @@ export async function handler(
   };
 }
 
+function sendOrderEvent(
+  order: Order,
+  eventType: OrderEventType,
+  lambdaRequestId: string
+) {
+  const orderEvent: OrderEvent = {
+    email: order.pk,
+    orderId: order.sk!,
+    billing: order.billing,
+    shipping: order.shipping,
+    requestId: lambdaRequestId,
+    productCodes: order.products.map((item) => item.code),
+  };
+
+  const envelope: Envelope = {
+    eventType,
+    data: JSON.stringify(orderEvent),
+  };
+  return snsClient
+    .publish({
+      TopicArn: orderEventsTopicArn,
+      Message: JSON.stringify(envelope),
+    })
+    .promise();
+}
+
 function buildOrder(orderRequest: OrderRequest, products: Product[]): Order {
   const orderProducts: OrderProductResponse[] = products.map((product) => ({
     code: product.code,
@@ -130,6 +186,8 @@ function buildOrder(orderRequest: OrderRequest, products: Product[]): Order {
   const totalPrice = products.reduce((prev, curr) => prev + curr.price, 0);
   const order: Order = {
     pk: orderRequest.email,
+    sk: randomUUID(),
+    createdAt: Date.now(),
     billing: {
       payment: orderRequest.payment,
       totalPrice,
